@@ -34,4 +34,3 @@ yarn-error.log*
 #Ignore Cypress tests temp files
 /tests/cypress/fixtures
 /tests/cypress/screenshots
-nuctl-1.5.16-linux-amd64
