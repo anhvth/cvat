@@ -6,14 +6,27 @@ import os
 # import numpy as np
 # import sys
 import os.path as osp
-from skimage.measure import find_contours, approximate_polygon
+from skimage.measure import approximate_polygon
+# from avcv.vision import find_contours
 # import tensorflow as tf
 # MASK_RCNN_DIR = os.path.abspath(os.environ.get('MASK_RCNN_DIR'))
 # if MASK_RCNN_DIR:
 #     sys.path.append(MASK_RCNN_DIR)  # To find local version of the library
 # from mrcnn import model as modellib
 # from mrcnn.config import Config
+def find_contours(thresh):
+    """
+        Get contour of a binary image
+            Arguments:
+                thresh: binary image
+            Returns:
+                Contours: a list of contour
+                Hierarchy:
 
+    """
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE,
+                                           cv2.CHAIN_APPROX_SIMPLE)
+    return contours
 
 # class ModelLoader:
 #     def __init__(self, labels):
@@ -100,29 +113,41 @@ import io
 
 
 cfg_path = "./mmsegmentation/configs/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes.py"
-# ckpt = "https://download.openmmlab.com/mmsegmentation/v0.5/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes/ocrnet_hr48_512x1024_160k_cityscapes_20200602_191037-dfbf1b0c.pth"
 ckpt= "/ckpt.pth"
+if not osp.exists(ckpt):
+    ckpt = "https://download.openmmlab.com/mmsegmentation/v0.5/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes/ocrnet_hr48_512x1024_160k_cityscapes_20200602_191037-dfbf1b0c.pth"
 model = init_segmentor(cfg_path, ckpt)
 
 CLASSES = CityscapesDataset.CLASSES
 PALETTE = CityscapesDataset.PALETTE
 
-def pred(data):
-    buf = io.BytesIO(base64.b64decode(data["image"].encode('utf-8')))
-    image = Image.open(buf)
+
+def pred(data, debug=False):
     result = []
-    image = np.array(image)
+    if not isinstance(data, np.ndarray):
+        buf = io.BytesIO(base64.b64decode(data["image"].encode('utf-8')))
+        image = np.array(Image.open(buf))
+    else:
+        image = data
+
     with torch.no_grad():
+        # image = cv2.resize(image, (1024, 512))
+        print("Infer image:", image.shape)
         pred = inference_segmentor(model, image)[0]
+    vis = np.zeros_like(image)
     for class_id, name in enumerate(CLASSES):
         mask = ((pred)==class_id).astype('uint8')*255
-        contours = find_contours(mask, 0.5)
-        # only one contour exist in our case
-        if len(contours):
-            contour = contours[0]
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones([30, 30]))
+        contours = find_contours(mask)
+        np.random.seed(class_id)
+        color = tuple(np.random.choice(255, 3))
+        
+        for contour in contours:
             contour = np.flip(contour, axis=1)
+            epsilon = 0.005 * cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, epsilon, True)
+            cv2.drawContours(vis, [contour], -1, (int(color[0]), int(color[1]),int(color[2])), -1)
             # Approximate the contour and reduce the number of points
-            contour = approximate_polygon(contour, tolerance=2.5)
             if len(contour) < 6:
                 continue
             # label = self.labels[class_id]
@@ -133,13 +158,18 @@ def pred(data):
                 "points": contour.ravel().tolist(),
                 "type": "polygon",
             })
+    cv2.imwrite("vis.jpg", vis)
     return dict(status=True, result=result)
-    
+
 if __name__ == "__main__":
-    while True:
-        if osp.exists('./data.pth'):
-            data = torch.load("./data.pth")
-            result = pred(data)
-            torch.save(result, './result.pth')
-            os.rename('./data.pth', './data.old.pth')
-        time.sleep(0.2)
+    img_path = "/home/anhvth/data/bid-data/img_test/autopilot_test_0001_20101230_021815_000172.png"
+    image = cv2.imread(img_path)[...,::-1].copy()
+    pred(image)
+
+    # while True:
+    #     if osp.exists('./data.pth'):
+    #         data = torch.load("./data.pth")
+    #         result = pred(data)
+    #         torch.save(result, './result.pth')
+    #         os.rename('./data.pth', './data.old.pth')
+    #     time.sleep(0.2)
