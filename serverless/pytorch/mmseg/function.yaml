@@ -1,0 +1,88 @@
+metadata:
+  name: mmseg
+  namespace: cvat
+  annotations:
+    name: mmseg
+    type: detector
+    spec:
+    framework: pytorch
+    spec: |
+      [
+        { "id": 0, "name": "road" },
+        { "id": 1, "name": "sidewalk" },
+        { "id": 2, "name": "building" },
+        { "id": 3, "name": "wall" },
+        { "id": 4, "name": "fence" },
+        { "id": 5, "name": "pole" },
+        { "id": 6, "name": "traffic light" },
+        { "id": 7, "name": "traffic sign" },
+        { "id": 8, "name": "vegetation" },
+        { "id": 9, "name": "terrain" },
+        { "id": 10, "name": "sky" },
+        { "id": 11, "name": "person" },
+        { "id": 12, "name": "rider" },
+        { "id": 13, "name": "car" },
+        { "id": 14, "name": "truck" },
+        { "id": 15, "name": "bus" },
+        { "id": 16, "name": "train" },
+        { "id": 17, "name": "motorcycle" },
+        { "id": 18, "name": "bicycle" }
+      ]
+spec:
+  description: deeplab pytorch prediction
+  runtime: 'python:3.6'
+  handler: main:handler
+  eventTimeout: 30s
+  env:
+    - name: PYTHONPATH
+      value: /opt/nuclio/fbrs
+
+  build:
+    image: cvat/mmseg:latest
+    baseImage: python:3.6.11
+
+    directives:
+      preCopy:
+        - kind: WORKDIR
+          value: /opt/nuclio
+        - kind: RUN
+          value: pip3 install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html && pip install mmcv-full==latest+torch1.5.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+        - kind: RUN
+          value: git clone https://github.com/open-mmlab/mmsegmentation.git /mmsegmentation && cd /mmsegmentation && pip install -e ./
+        # - kind: RUN
+        #   value: git clone https://github.com/saic-vul/fbrs_interactive_segmentation.git fbrs
+        # - kind: WORKDIR
+        #   value: /opt/nuclio/fbrs
+        # - kind: ENV
+        #   value: fileid=1Z9dQtpWVTobEdmUBntpUU0pJl-pEXUwR
+        # - kind: ENV/
+        #   value: filename=resnet101_dh256_sbd.pth
+        # - kind: RUN
+        #   value: curl -c ./cookie -s -L "https://drive.google.com/uc?export=download&id=${fileid}"
+        # - kind: RUN
+        #   value: curl -Lb ./cookie "https://drive.google.com/uc?export=download&confirm=`awk '/download/ {print $NF}' ./cookie`&id=${fileid}" -o ${filename}
+        - kind: RUN
+          value: apt update && apt install -y libgl1-mesa-glx vim
+        - kind: RUN
+          value: pip install git+https://github.com/anhvth/avcv.git    
+        - kind: RUN
+          value: pip install scikit-image
+        # - kind: RUN
+        #   value: pip3 install -r requirements.txt
+        - kind: WORKDIR
+          value: /opt/nuclio
+
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 2
+      kind: 'http'
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume
