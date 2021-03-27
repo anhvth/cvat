@@ -1,6 +1,15 @@
 # # Copyright (C) 2020-2021 Intel Corporation
 # #
 # # SPDX-License-Identifier: MIT
+import io
+from PIL import Image
+import base64
+from avcv.vision import gt_to_color_mask
+import torch
+import cv2
+import numpy as np
+from mmseg.datasets import CityscapesDataset
+from mmseg.apis import *
 import time
 import os
 # import numpy as np
@@ -14,6 +23,8 @@ from skimage.measure import approximate_polygon
 #     sys.path.append(MASK_RCNN_DIR)  # To find local version of the library
 # from mrcnn import model as modellib
 # from mrcnn.config import Config
+
+
 def find_contours(thresh):
     """
         Get contour of a binary image
@@ -93,27 +104,16 @@ def find_contours(thresh):
 #             'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
 #             'bicycle')
 
+
 PALETTE = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
-            [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
-            [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
-            [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
-            [0, 80, 100], [0, 0, 230], [119, 11, 32]]
-
-
-from mmseg.apis import *
-from mmseg.datasets import CityscapesDataset
-import numpy as np
-import cv2
-import torch
-from avcv.vision import gt_to_color_mask
-import base64
-from PIL import Image
-import io
-
+           [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+           [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+           [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
+           [0, 80, 100], [0, 0, 230], [119, 11, 32]]
 
 
 cfg_path = "./mmsegmentation/configs/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes.py"
-ckpt= "/ckpt.pth"
+ckpt = "/ckpt.pth"
 if not osp.exists(ckpt):
     ckpt = "https://download.openmmlab.com/mmsegmentation/v0.5/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes/ocrnet_hr48_512x1024_160k_cityscapes_20200602_191037-dfbf1b0c.pth"
 model = init_segmentor(cfg_path, ckpt)
@@ -129,24 +129,27 @@ def pred(data, debug=False):
         image = np.array(Image.open(buf))
     else:
         image = data
-
+    
     with torch.no_grad():
-        # image = cv2.resize(image, (1024, 512))
         print("Infer image:", image.shape)
         pred = inference_segmentor(model, image)[0]
+
     vis = np.zeros_like(image)
-    for class_id, name in enumerate(CLASSES):
-        mask = ((pred)==class_id).astype('uint8')*255
+    for class_id, class_name in enumerate(CLASSES):
+        if class_name != 'road':
+            continue
+        mask = ((pred) == class_id).astype('uint8')*255
         # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones([30, 30]))
         contours = find_contours(mask)
         # np.random.seed(class_id)
         color = PALETTE[class_id]
-        
+
         for contour in contours:
             contour = np.flip(contour, axis=1)
             epsilon = 0.005 * cv2.arcLength(contour, True)
             approx = cv2.approxPolyDP(contour, epsilon, True)
-            cv2.drawContours(vis, [contour], -1, (int(color[0]), int(color[1]),int(color[2])), -1)
+            cv2.drawContours(
+                vis, [contour], -1, (int(color[0]), int(color[1]), int(color[2])), -1)
             # Approximate the contour and reduce the number of points
             if len(contour) < 6:
                 continue
@@ -154,16 +157,17 @@ def pred(data, debug=False):
 
             result.append({
                 "confidence": str(0.9),
-                "label": name,
+                "label": class_name,
                 "points": contour.ravel().tolist(),
                 "type": "polygon",
             })
     cv2.imwrite("vis.jpg", vis)
     return dict(status=True, result=result)
 
+
 if __name__ == "__main__":
     img_path = "/home/anhvth/data/bid-data/img_test/autopilot_test_0001_20101230_021815_000172.png"
-    image = cv2.imread(img_path)[...,::-1].copy()
+    image = cv2.imread(img_path)[..., ::-1].copy()
     pred(image)
 
     # while True:

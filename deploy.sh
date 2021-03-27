@@ -2,7 +2,7 @@
 # sudo chmod +x /usr/local/bin/nuctl
 
 # docker-compose -f docker-compose.yml -f components/serverless/docker-compose.serverless.yml down | docker ps | grep nuclio | awk '{print $1}' | xargs -r docker kill
-# docker-compose -f docker-compose.yml -f components/serverless/docker-compose.serverless.yml up -d
+# docker-compose -f docker-compose.yml -f components/serverless/docker-compose.serverless.yml -f docker-compose.override.yml up -d
 
 
 
