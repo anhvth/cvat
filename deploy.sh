@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-# wget https://github.com/nuclio/nuclio/releases/download/1.5.16/nuctl-1.5.16-linux-amd64
-# chmod +x ./nuctl-1.5.16-linux-amd64
-=======
 # sudo wget https://github.com/nuclio/nuclio/releases/download/1.5.8/nuctl-1.5.8-linux-amd64 -O /usr/local/bin/nuctl
 # sudo chmod +x /usr/local/bin/nuctl
->>>>>>> master
 
 # docker-compose -f docker-compose.yml -f components/serverless/docker-compose.serverless.yml down | docker ps | grep nuclio | awk '{print $1}' | xargs -r docker kill
 # docker-compose -f docker-compose.yml -f components/serverless/docker-compose.serverless.yml up -d
@@ -34,7 +29,7 @@
 str='''
 nuctl deploy --project-name cvat
   --path '$1'
-  --resource-limit nvidia.com/gpu=1 --verbose
+  --resource-limit nvidia.com/gpu=1
 '''
 eval $str
 echo $str

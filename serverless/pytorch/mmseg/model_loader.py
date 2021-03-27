@@ -1,10 +1,11 @@
 # # Copyright (C) 2020-2021 Intel Corporation
 # #
 # # SPDX-License-Identifier: MIT
-
-# import os
+import time
+import os
 # import numpy as np
 # import sys
+import os.path as osp
 from skimage.measure import find_contours, approximate_polygon
 # import tensorflow as tf
 # MASK_RCNN_DIR = os.path.abspath(os.environ.get('MASK_RCNN_DIR'))
@@ -99,7 +100,8 @@ import io
 
 
 cfg_path = "./mmsegmentation/configs/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes.py"
-ckpt = "https://download.openmmlab.com/mmsegmentation/v0.5/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes/ocrnet_hr48_512x1024_160k_cityscapes_20200602_191037-dfbf1b0c.pth"
+# ckpt = "https://download.openmmlab.com/mmsegmentation/v0.5/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes/ocrnet_hr48_512x1024_160k_cityscapes_20200602_191037-dfbf1b0c.pth"
+ckpt= "/ckpt.pth"
 model = init_segmentor(cfg_path, ckpt)
 
 CLASSES = CityscapesDataset.CLASSES
@@ -131,9 +133,13 @@ def pred(data):
                 "points": contour.ravel().tolist(),
                 "type": "polygon",
             })
-    return result
+    return dict(status=True, result=result)
     
-
-data = torch.load("./data.pth")
-result = pred(data)
-torch.save(result, './result.pth')
+if __name__ == "__main__":
+    while True:
+        if osp.exists('./data.pth'):
+            data = torch.load("./data.pth")
+            result = pred(data)
+            torch.save(result, './result.pth')
+            os.rename('./data.pth', './data.old.pth')
+        time.sleep(0.2)
