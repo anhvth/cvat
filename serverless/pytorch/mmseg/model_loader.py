@@ -93,11 +93,11 @@ def find_contours(thresh):
 #             'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
 #             'bicycle')
 
-# PALETTE = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
-#             [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
-#             [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
-#             [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
-#             [0, 80, 100], [0, 0, 230], [119, 11, 32]]
+PALETTE = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
+            [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+            [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+            [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
+            [0, 80, 100], [0, 0, 230], [119, 11, 32]]
 
 
 from mmseg.apis import *
@@ -139,8 +139,8 @@ def pred(data, debug=False):
         mask = ((pred)==class_id).astype('uint8')*255
         # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones([30, 30]))
         contours = find_contours(mask)
-        np.random.seed(class_id)
-        color = tuple(np.random.choice(255, 3))
+        # np.random.seed(class_id)
+        color = PALETTE[class_id]
         
         for contour in contours:
             contour = np.flip(contour, axis=1)
