@@ -44,30 +44,30 @@ def find_contours(thresh):
 
 meta = read_json("coco_panoptic_meta.json")
 
-CLASSES = [
-    'N/A', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-    'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'N/A',
-    'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse',
-    'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'N/A', 'backpack',
-    'umbrella', 'N/A', 'N/A', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis',
-    'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-    'skateboard', 'surfboard', 'tennis racket', 'bottle', 'N/A', 'wine glass',
-    'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich',
-    'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
-    'chair', 'couch', 'potted plant', 'bed', 'N/A', 'dining table', 'N/A',
-    'N/A', 'toilet', 'N/A', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
-    'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'N/A',
-    'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
-    'toothbrush'
-]
+# CLASSES = [
+#     'N/A', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
+#     'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'N/A',
+#     'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse',
+#     'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'N/A', 'backpack',
+#     'umbrella', 'N/A', 'N/A', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis',
+#     'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
+#     'skateboard', 'surfboard', 'tennis racket', 'bottle', 'N/A', 'wine glass',
+#     'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich',
+#     'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
+#     'chair', 'couch', 'potted plant', 'bed', 'N/A', 'dining table', 'N/A',
+#     'N/A', 'toilet', 'N/A', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
+#     'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'N/A',
+#     'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
+#     'toothbrush'
+# ]
 
 # Detectron2 uses a different numbering scheme, we build a conversion table
-coco2d2 = {}
-count = 0
-for i, c in enumerate(CLASSES):
-    if c != "N/A":
-        coco2d2[i] = count
-        count += 1
+# coco2d2 = {}
+# count = 0
+# for i, c in enumerate(CLASSES):
+#     if c != "N/A":
+#         coco2d2[i] = count
+#         count += 1
 
 # standard PyTorch mean-std input image normalization
 transform = T.Compose([
@@ -87,31 +87,34 @@ def inference_segmentor(model, image):
     out = model(img)
     result = postprocessor(out, torch.as_tensor(
         img.shape[-2:]).unsqueeze(0))[0]
-    panoptic_seg = Image.open(io.BytesIO(result['png_string']))
-    panoptic_seg = numpy.array(panoptic_seg, dtype=numpy.uint8).copy()
-    panoptic_seg_id = rgb2id(panoptic_seg)
-    return panoptic_seg_id
+
+    
+    # result = postprocessor(out, torch.as_tensor(img.shape[-2:]).unsqueeze(0))[0]
+    return result
 
 
 def pred(data, debug=False):
-    result = []
+    return_dicts = []
     if not isinstance(data, np.ndarray):
         buf = io.BytesIO(base64.b64decode(data["image"].encode('utf-8')))
         image = np.array(Image.open(buf))
     else:
         image = data
     h, w = image.shape[:2]
+    ori_size = (w,h)
 
     with torch.no_grad():
         print("Infer image:", image.shape)
-        panoptic_seg_id = inference_segmentor(model, image)
+        result = inference_segmentor(model, image)
 
-
+    panoptic_seg = Image.open(io.BytesIO(result['png_string']))
+    panoptic_seg = numpy.array(panoptic_seg, dtype=numpy.uint8).copy()
+    panoptic_seg_id = rgb2id(panoptic_seg)
     
 
     instance_ids = np.unique(panoptic_seg_id)
     segments_info = result["segments_info"]
-
+    mask_approx = np.zeros([h,w ,3], 'uint8')
     for instance_id, info in zip(instance_ids, segments_info):
         if not info['isthing']:
             cate = meta['stuff_dataset_id_to_contiguous_id'][str(info['category_id'])]
@@ -120,29 +123,36 @@ def pred(data, debug=False):
             cate = meta['thing_dataset_id_to_contiguous_id'][str(info['category_id'])]
             name = meta['thing_classes'][cate]
         info['class_name'] = name
-        instance_mask = panoptic_seg_id == instance_id
+        instance_mask = (panoptic_seg_id == instance_id).astype('uint8')
+        instance_mask = cv2.resize(instance_mask, ori_size)
         contours = find_contours(instance_mask)
 
-        for contour in contours:
-            contour = np.flip(contour, axis=1)
-            # epsilon = 0.005 * cv2.arcLength(contour, True)
-            # approx = cv2.approxPolyDP(contour, epsilon, True)
-            # cv2.drawContours(
-            #     vis, [contour], -1, (int(color[0]), int(color[1]), int(color[2])), -1)
-            # Approximate the contour and reduce the number of points
-            # if len(contour) < 6:
-            #     continue
-            # label = self.labels[class_id]
 
-            result.append({
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            contour = np.flip(contour, axis=1)
+            epsilon = 2.5 #0.003 * cv2.arcLength(contour, True)
+            print(epsilon)
+            # epsilon = epsilon * area
+            contour = cv2.approxPolyDP(contour, epsilon, True)
+
+            color = np.random.choice(256, 3).astype('uint8').tolist()
+            cv2.drawContours(mask_approx, [contour], -1, color, 2)
+            n_points = len(contour)
+
+
+            # Approximate the contour and reduce the number of points
+            if len(contour) < 3:
+                continue
+
+            return_dicts.append({
                 "confidence": str(0.9),
                 "label": info['class_name'],
                 "points": contour.ravel().tolist(),
                 "type": "polygon",
             })
-
-    print(result)
-    return dict(status=True, result=result)
+    cv2.imwrite("mask_approx.jpg", mask_approx)
+    return dict(status=True, result=return_dicts)
 
 
 if __name__ == "__main__":
