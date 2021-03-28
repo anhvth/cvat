@@ -1,3 +1,5 @@
 *.jpg
 *.json
 *.pth
+work_dirs/
+cache

@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".env/bin/python",
+    "python.pythonPath": "/home/anhvth/miniconda3/bin/python",
     "eslint.probe": [
         "javascript",
         "typescript",
