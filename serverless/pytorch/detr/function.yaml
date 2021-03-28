@@ -1,0 +1,165 @@
+metadata:
+  name: dettrans
+  namespace: cvat
+  annotations:
+    name: dettrans
+    type: detector
+    spec:
+    framework: pytorch
+    spec: |
+      [
+        { "id": 0, "name": "0" },
+        { "id": 1, "name": "person" },
+        { "id": 2, "name": "bicycle" },
+        { "id": 3, "name": "car" },
+        { "id": 4, "name": "motorcycle" },
+        { "id": 5, "name": "airplane" },
+        { "id": 6, "name": "bus" },
+        { "id": 7, "name": "train" },
+        { "id": 8, "name": "truck" },
+        { "id": 9, "name": "boat" },
+        { "id": 10, "name": "traffic light" },
+        { "id": 11, "name": "fire hydrant" },
+        { "id": 12, "name": "12" },
+        { "id": 13, "name": "stop sign" },
+        { "id": 14, "name": "parking meter" },
+        { "id": 15, "name": "bench" },
+        { "id": 16, "name": "bird" },
+        { "id": 17, "name": "cat" },
+        { "id": 18, "name": "dog" },
+        { "id": 19, "name": "horse" },
+        { "id": 20, "name": "sheep" },
+        { "id": 21, "name": "cow" },
+        { "id": 22, "name": "elephant" },
+        { "id": 23, "name": "bear" },
+        { "id": 24, "name": "zebra" },
+        { "id": 25, "name": "giraffe" },
+        { "id": 26, "name": "26" },
+        { "id": 27, "name": "backpack" },
+        { "id": 28, "name": "umbrella" },
+        { "id": 29, "name": "29" },
+        { "id": 30, "name": "30" },
+        { "id": 31, "name": "handbag" },
+        { "id": 32, "name": "tie" },
+        { "id": 33, "name": "suitcase" },
+        { "id": 34, "name": "frisbee" },
+        { "id": 35, "name": "skis" },
+        { "id": 36, "name": "snowboard" },
+        { "id": 37, "name": "sports ball" },
+        { "id": 38, "name": "kite" },
+        { "id": 39, "name": "baseball bat" },
+        { "id": 40, "name": "baseball glove" },
+        { "id": 41, "name": "skateboard" },
+        { "id": 42, "name": "surfboard" },
+        { "id": 43, "name": "tennis racket" },
+        { "id": 44, "name": "bottle" },
+        { "id": 45, "name": "45" },
+        { "id": 46, "name": "wine glass" },
+        { "id": 47, "name": "cup" },
+        { "id": 48, "name": "fork" },
+        { "id": 49, "name": "knife" },
+        { "id": 50, "name": "spoon" },
+        { "id": 51, "name": "bowl" },
+        { "id": 52, "name": "banana" },
+        { "id": 53, "name": "apple" },
+        { "id": 54, "name": "sandwich" },
+        { "id": 55, "name": "orange" },
+        { "id": 56, "name": "broccoli" },
+        { "id": 57, "name": "carrot" },
+        { "id": 58, "name": "hot dog" },
+        { "id": 59, "name": "pizza" },
+        { "id": 60, "name": "donut" },
+        { "id": 61, "name": "cake" },
+        { "id": 62, "name": "chair" },
+        { "id": 63, "name": "couch" },
+        { "id": 64, "name": "potted plant" },
+        { "id": 65, "name": "bed" },
+        { "id": 66, "name": "66" },
+        { "id": 67, "name": "dining table" },
+        { "id": 68, "name": "68" },
+        { "id": 69, "name": "69" },
+        { "id": 70, "name": "toilet" },
+        { "id": 71, "name": "71" },
+        { "id": 72, "name": "tv" },
+        { "id": 73, "name": "laptop" },
+        { "id": 74, "name": "mouse" },
+        { "id": 75, "name": "remote" },
+        { "id": 76, "name": "keyboard" },
+        { "id": 77, "name": "cell phone" },
+        { "id": 78, "name": "microwave" },
+        { "id": 79, "name": "oven" },
+        { "id": 80, "name": "toaster" },
+        { "id": 81, "name": "sink" },
+        { "id": 82, "name": "refrigerator" },
+        { "id": 83, "name": "83" },
+        { "id": 84, "name": "book" },
+        { "id": 85, "name": "clock" },
+        { "id": 86, "name": "vase" },
+        { "id": 87, "name": "scissors" },
+        { "id": 88, "name": "teddy bear" },
+        { "id": 89, "name": "hair drier" },
+        { "id": 90, "name": "toothbrush" }
+      ]
+spec:
+  description: deeplab pytorch prediction
+  runtime: 'python:3.6'
+  handler: main:handler
+  eventTimeout: 30s
+  env:
+    - name: PYTHONPATH
+      value: /opt/nuclio/fbrs
+
+  build:
+    image: cvat/mmseg:latest
+    baseImage: python:3.6.11
+
+    directives:
+      preCopy:
+        - kind: WORKDIR
+          value: /opt/nuclio
+        - kind: RUN
+          value: pip3 install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html && pip install mmcv-full==latest+torch1.5.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+        - kind: RUN
+          value: git clone https://github.com/open-mmlab/mmsegmentation.git /mmsegmentation && cd /mmsegmentation && pip install -e ./
+        # - kind: RUN
+        #   value: git clone https://github.com/saic-vul/fbrs_interactive_segmentation.git fbrs
+        # - kind: WORKDIR
+        #   value: /opt/nuclio/fbrs
+        # - kind: ENV
+        #   value: fileid=1Z9dQtpWVTobEdmUBntpUU0pJl-pEXUwR
+        # - kind: ENV/
+        #   value: filename=resnet101_dh256_sbd.pth
+        # - kind: RUN
+        #   value: curl -c ./cookie -s -L "https://drive.google.com/uc?export=download&id=${fileid}"
+        # - kind: RUN
+        #   value: curl -Lb ./cookie "https://drive.google.com/uc?export=download&confirm=`awk '/download/ {print $NF}' ./cookie`&id=${fileid}" -o ${filename}
+        - kind: RUN
+          value: apt update && apt install -y libgl1-mesa-glx vim
+        - kind: RUN
+          value: pip install git+https://github.com/anhvth/avcv.git    
+        - kind: RUN
+          value: pip install scikit-image && pip install git+https://github.com/cocodataset/panopticapi.git
+        # - kind: RUN
+          # value: wget "https://download.openmmlab.com/mmsegmentation/v0.5/ocrnet/ocrnet_hr48_512x1024_160k_cityscapes/ocrnet_hr48_512x1024_160k_cityscapes_20200602_191037-dfbf1b0c.pth" -O /ckpt.pth
+        # - kind: RUN
+        #   value: pip3 install -r requirements.txt
+        - kind: WORKDIR
+          value: /opt/nuclio
+        - kind: RUN
+          value: mkdir -p /root/.cache/torch/hub/checkpoints/ &&  wget "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth" -O "/root/.cache/torch/hub/checkpoints/resnet101-5d3b4d8f.pth" 
+        - kind: RUN
+          value: wget "https://dl.fbaipublicfiles.com/detr/detr-r101-panoptic-40021d53.pth" -O /root/.cache/torch/hub/checkpoints/detr-r101-panoptic-40021d53.pth
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 2
+      kind: 'http'
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume
