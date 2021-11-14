@@ -167,11 +167,12 @@ class LambdaFunction:
 
             if self.kind == LambdaType.DETECTOR:
                 payload.update({
-                    "image": self._get_image(db_task, data["frame"], quality)
+                    "image": self._get_image(db_task, data["frame"], quality),
                 })
             elif self.kind == LambdaType.INTERACTOR:
                 payload.update({
                     "image": self._get_image(db_task, data["frame"], quality),
+                    "image1": self._get_image(db_task, data["frame1"], quality),
                     "pos_points": data["pos_points"][2:] if self.startswith_box else data["pos_points"],
                     "neg_points": data["neg_points"],
                     "obj_bbox": data["pos_points"][0:2] if self.startswith_box else None

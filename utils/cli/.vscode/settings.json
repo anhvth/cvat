@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "/home/anhvth/gitprojects/traffic-sign-models-dev/2d-dets/yolox/"
+    ]
+}
