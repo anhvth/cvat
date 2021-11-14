@@ -1,4 +1,5 @@
-import io, csv
+import io
+import csv
 import xmltodict
 import time
 import numpy as np
@@ -41,6 +42,9 @@ def read_zip(path, format='coco'):
         return json.loads(data)
     elif 'CVAT' in format:
         data = archive.read('annotations.xml')
+        return data
+    elif 'datu' in format:
+        data = archive.read('annotations/default.json')
         return data
 
 
@@ -170,6 +174,7 @@ if __name__ == '__main__':
             "%Y_%m_%d_%H_%M_%S", time.localtime()))
         ann_cvat_before = os.path.join(out_dir, 'before_ann_cvat.zip')
         mmcv.mkdir_or_exist(os.path.dirname(ann_cvat_before))
+
         cli.tasks_dump(args.task, 'CVAT for video 1.1', ann_cvat_before)
         logger.info('ann_cvat_before: {}'.format(ann_cvat_before))
         xml_data_str = read_zip(ann_cvat_before, 'CVAT')
@@ -179,67 +184,35 @@ if __name__ == '__main__':
         coco = AvCOCO(read_zip(ann_cvat_before, 'coco'))
         os.remove(ann_cvat_before)
 
+        cli.tasks_dump(args.task, 'Datumaro 1.0', ann_cvat_before)
+        import json
+        datumaro = json.loads(read_zip(ann_cvat_before, 'datumaro'))
 
-
+        os.remove(ann_cvat_before)
+        names = [_['name'] for _ in datumaro['categories']['label']['labels']]
+        # name2catid =
+        keys = ['@xtl', '@ytl', '@xbr', '@ybr']
 
         # tracks = dict()
+        datumuro_frame_id_to_index = {
+            item['attr']['frame']: i for i, item in enumerate(datumaro['items'])}
         for track in xml_data_dict['annotations']['track']:
             if len(track['box']):
-                # tracks[track['@id']] =
                 updated_track_anns = TrackUpdater(
                     track['box'], coco).interpolate_with_confirm_tracks()
+                for ann in updated_track_anns:
+                    x1, y1, x2, y2 = [float(ann[key]) for key in keys]
+                    bbox = [x1, y1, x2-x1, y2-y1]
+                    frame_id = int(ann['@frame'])
+                    cat_id = names.index(track['@label'])
 
-                # boxes = track['box']+updated_track_anns
-                # boxes = list(sorted(boxes, key=lambda x: x['@frame']))
-                # track['box'] = boxes
+                    datumaro_ann = {'id': 0, 'type': 'bbox', 'attributes': {'occluded': False},
+                                    'group': 0, 'label_id': cat_id, 'z_order': 0, 'bbox': bbox}
+                    # -- Update datumaro
+                    idx = datumuro_frame_id_to_index[frame_id]
+                    datumaro['items'][idx]['annotations'].append(datumaro_ann)
 
-        # with open(xml_data_dict, 'w') as f:
-        #     for track in xml_data_dict['annotations']['track']:
-        #         if len(track['box']):
-        #             f.write('')
-        # file_object = open('.cache/out.txt', 'wb')
-        MOT = [
-            "frame_id",
-            "track_id",
-            "xtl",
-            "ytl",
-            "width",
-            "height",
-            "confidence",
-            "class_id",
-            "visibility"
-        ]
+        out_file = osp.join(out_dir, 'datamuro.json')
+        mmcv.dump(datumaro, out_file)
 
-        name2clsid = {cat['name']:id for id, cat in coco.cats.items()}
-        with io.TextIOWrapper(open('.cache/out.txt', 'wb'), encoding="utf-8") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=MOT)
-            for i, track in enumerate(reversed(xml_data_dict['annotations']['track'])):
-                for shape in track['box'][:-1]:
-                    # MOT doesn't support polygons or 'outside' property
-                    # if shape.type != 'rectangle':
-                        # continue
-                    writer.writerow({
-                        "frame_id": int(shape['@frame']),
-                        "track_id": i+1 if len(track['box'])>2 else -1,
-                        "xtl":    float(shape['@xtl']),
-                        "ytl":    float(shape['@ytl']),
-                        "width":  float(shape['@xbr'])- float(shape['@xtl']),
-                        "height": float(shape['@ybr'])- float(shape['@ytl']),
-                        "confidence": 1,
-                        "class_id": name2clsid[track['@label']],
-                        "visibility": float(1 - int(shape['@occluded']))
-                    })
-
-        # updated_xml_data_str = dicttoxml.dicttoxml(xml_data_dict)
-        # out_file = osp.join(out_dir, 'cvat_updated_xml.xml')
-        # with open(out_file, "w+") as f:
-            # f.write(str(xml_data_str))
-        # logger.info('After update: {}'.format(out_file))
-
-        # cli.tasks_upload(args.task, 'CVAT for video 1.1', update_annotation(out_file))
-        # updated_tracks = dict()
-        # for track_id, track_anns in tracks.items():
-
-        # import ipdb
-        # ipdb.set_trace()
-        # updated_tracks[track_id] = updated_track_anns
+        # cli.tasks_upload(args.task, 'Datumaro 1.0', out_file)

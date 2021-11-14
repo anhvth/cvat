@@ -418,6 +418,10 @@ class TaskData(InstanceLabelData):
 
     def _import_track(self, track):
         _track = track._asdict()
+
+        import json
+        json.dump(_track, open("dump_track.json", "w+"))
+
         label_id = self._get_label_id(_track.pop('label'))
         _track['frame'] = self.rel_frame_id(
             min(int(shape.frame) for shape in _track['shapes']))
