@@ -34,7 +34,7 @@ def _import(src_file, task_data):
         label_cat = dataset.categories()[datumaro.AnnotationType.label]
 
         for item in dataset:
-            frame_number = int(item.id) - 1 # NOTE: MOT frames start from 1
+            frame_number = int(item.id)# NOTE: MOT frames start from 1
             frame_number = task_data.abs_frame_id(frame_number)
 
             for ann in item.annotations:

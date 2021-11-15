@@ -87,36 +87,33 @@ class VideoPrediction:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', '-i', help='Input video')
-    parser.add_argument('--task', '-t', help='task id')
+    parser.add_argument('--input', '-i', default=None, help='Input video')
+    parser.add_argument('--task', '-t',default=None, help='task id')
     args = parser.parse_args()
     #--- Debug
     video_predictor = VideoPrediction()
-    # args = parser.parse_known_args()[0]
-    # args.input = '/data/unlabeled-videos/videos/data20210319B_cam150_1616143274.262851_1616143283.496013.avi'
-
 
     coco_pred, json_path, images = video_predictor.get_prediction(args.input)
 
     pred_json_path = json_path.replace('.json', '_pred.json')
     mmcv.dump(coco_pred.dataset, pred_json_path)
 
-
     task_name = get_name(args.input)
     img_paths = glob(osp.join(images, '*.jpg'))
-
-
 
     with requests.Session() as session:
         session = requests.Session()
         api = CVAT_API_V1('%s:%s' % ('localhost', 8080), False)
         cli = CLI(session, api, ('anhvth', 'User@2020'))
-        cli.tasks_create(
-            task_name,labels=[], overlap=0, segment_size=0,bug='',
-            project_id=37,
-            resource_type=ResourceType.LOCAL,
-            resources=img_paths,
-            annotation_format="COCO 1.0",
-            annotation_path=update_annotation(pred_json_path),
-        )
-        # cli.tasks_upload(54, 'COCO 1.0', update_annotation(pred_json_path))
+        if args.task is None: # Create 
+            assert args.input is not None, "Task and input can not be both None"
+            cli.tasks_create(
+                task_name,labels=[], overlap=0, segment_size=0,bug='',
+                project_id=37,
+                resource_type=ResourceType.LOCAL,
+                resources=img_paths,
+                annotation_format="COCO 1.0",
+                annotation_path=update_annotation(pred_json_path),
+            )
+        else: # update with task id
+            cli.tasks_upload(args.task, 'COCO 1.0', update_annotation(pred_json_path))
