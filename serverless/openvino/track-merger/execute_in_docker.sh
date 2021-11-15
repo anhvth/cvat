@@ -1,0 +1,1 @@
+docker exec -it nuclio-nuclio-vinai-trackmerger  $1
