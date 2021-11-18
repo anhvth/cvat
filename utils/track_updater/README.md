@@ -16,13 +16,13 @@
 
 - [x] Create new track from existing shapes (including interpolation)
 
+- [x] Create new track from existing track and existing shapes (including interpolation)
+
 - [x] Create new track from existing tracks (including interpolation)
 
-- [ ] Create new track from function Draw new rectangle with track (including interpolation)
+- [x] Create new track from function Draw new rectangle with track (including interpolation)
 
-- [ ] Create new track from newly created shapes
-
-- [ ] Create new box not belonging to any track
+- [x] Create new box not belonging to any track
 
 - [ ] Split track
 

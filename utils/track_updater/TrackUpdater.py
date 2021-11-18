@@ -217,6 +217,7 @@ class TrackUpdater:
             json.dump(data["shapes"], f, indent=2)
 
         for shape in data["shapes"]:
+            task.frame2shapes[shape["frame"]].remove(shape["id"])
             del task.shapes[shape["id"]]
 
         ## Thêm vào 'data' những shape đã được đánh dấu lược bỏ trong quá trình
