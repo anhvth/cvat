@@ -56,7 +56,7 @@ class TrackUpdater:
     def __init__(self) -> None:
         self.tasks = dict()
 
-    ## NOTE: Nên nghĩ cách dùng session hoặc cache của Django thay vì cách lưu file củ chuối này
+    ## NOTE: Nên nghĩ cách dùng session hoặc cache của Django thay vì cách lưu file này
     def save_pickle(self, pk, data):
         with open(f"task_{pk}.pkl", "wb+") as f:
             pickle.dump(data, f)
@@ -80,7 +80,7 @@ class TrackUpdater:
         return data
 
     def patch_create_supplement(self, data, pk, logger):
-        ## Method này chỉ xử lí track các track mới tạo từ lệnh PATH_create.
+        ## Method này chỉ xử lí track các track mới tạo từ lệnh PATCH_create.
 
         ## Lưu ý hàm này sẽ chỉ bổ sung các shape còn thiếu bằng interpolation. Tất cả
         ## shapes được trả về bằng hàm này đều không có ID. ID sẽ được cập nhật sau đó
