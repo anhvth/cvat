@@ -57,7 +57,7 @@ def update_annotation(data):
         data_update = update_annotation(data)
         mmcv.dump(data_update, out_path)
         return out_path
-        
+
 
 
 
@@ -105,11 +105,10 @@ if __name__ == '__main__':
 
 
     with requests.Session() as session:
-        import ipdb; ipdb.set_trace()
         api = CVAT_API_V1('%s:%s' % ('localhost', '8080'), False)
         cli = CLI(session, api,  ('anhvth', 'Matma123'))
 
-        if args.task is None: # Create 
+        if args.task is None: # Create
             # assert args.input is not None, "Task and input can not be both None"
             cli.tasks_create(
                 task_name,labels=[], overlap=0, segment_size=0,bug='',
