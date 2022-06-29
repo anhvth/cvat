@@ -32,9 +32,9 @@ def main():
     args = parser.parse_args()
     config_log(args.loglevel)
     with requests.Session() as session:
-        import ipdb; ipdb.set_trace()
-        api = CVAT_API_V1('%s:%s' % (args.server_host, args.server_port), args.https)
-        cli = CLI(session, api, args.auth)
+        # api = CVAT_API_V1('%s:%s' % (args.server_host, args.server_port), args.https)
+        api = CVAT_API_V1('localhost:8080', args.https)
+        cli = CLI(session, api, "anhvth8:Matma123")
         try:
             actions[args.action](cli, **args.__dict__)
         except (requests.exceptions.HTTPError,

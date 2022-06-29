@@ -91,13 +91,6 @@ if __name__ == '__main__':
     parser.add_argument('--task_name', '-n', default=None, help='')
     parser.add_argument('--task', '-t',default=None, help='task id')
     args = parser.parse_args()
-    #--- Debug
-    # video_predictor = VideoPrediction()
-
-    # coco_pred, json_path, images = video_predictor.get_prediction(args.input)
-
-    # pred_json_path = json_path.replace('.json', '_pred.json')
-    # mmcv.dump(coco_pred.dataset, pred_json_path)
 
     task_name = args.task_name
     img_dir = args.json_path.split('/annotations')[0]+'/images/'
