@@ -47,3 +47,8 @@ yarn-error.log*
 /site/resources/
 /site/node_modules/
 /site/tech-doc-hugo
+annotation-converter/annotations/
+annotation-converter/images/
+annotation-converter/yolo_annotations/
+annotation-converter/train.json
+coco/images/
